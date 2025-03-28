@@ -9,6 +9,11 @@ export const COMMANDS = {
   HELP: "help",
 };
 
+export const COMMAND_DESCRIPTIONS = {
+  START: "Начать работу с ботом",
+  HELP: "Показать справку по командам",
+};
+
 export const SERVER_CONFIG = {
   PORT: process.env.PORT || 3000,
   RATE_LIMIT: {
