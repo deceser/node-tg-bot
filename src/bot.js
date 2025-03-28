@@ -1,20 +1,47 @@
-const TelegramBot = require('node-telegram-bot-api');
-const config = require('../config/config');
+// src/bot.js
+import { Telegraf } from 'telegraf';
+import express from 'express';
+import { config } from '../config/config.js';
 
-const bot = new TelegramBot(config.BOT_TOKEN, { polling: true });
+// Initialize Express app
+const app = express();
+app.use(express.json());
+
+// Initialize bot with token
+const bot = new Telegraf(config.BOT_TOKEN);
 
 // Handle /start command
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Привет! Я ваш новый бот. 👋');
+bot.start((ctx) => {
+  ctx.reply('Привет! Я ваш персональный помощник. Чем могу помочь?');
 });
 
-// Handle all messages
-bot.on('message', (msg) => {
-  const chatId = msg.chat.id;
-  if (msg.text && !msg.text.startsWith('/')) {
-    bot.sendMessage(chatId, `Вы написали: ${msg.text}`);
-  }
+// Handle /help command
+bot.help((ctx) => {
+  ctx.reply(
+    'Я умею выполнять простые задачи: отправлять напоминания, планировать встречи и даже переводить голосовые сообщения. Напишите мне что-нибудь!',
+  );
 });
 
-module.exports = bot;
+// Simple text message handler
+bot.hears(/.*/, (ctx) => {
+  // Here you can add any text processing logic
+  ctx.reply(`Вы написали: ${ctx.message.text}`);
+});
+
+// Set up webhook
+app.post(`/webhook/${config.BOT_TOKEN}`, (req, res) => {
+  bot.handleUpdate(req.body);
+  res.sendStatus(200);
+});
+
+// Start Express server
+const PORT = config.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+// Start bot
+bot.launch();
+
+// Export bot and app for use in other modules
+export { bot, app };
