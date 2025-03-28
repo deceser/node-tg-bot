@@ -2,7 +2,7 @@
 import "dotenv/config";
 
 import { bot } from "./src/bot.js";
-import { config } from "./config/config.js";
+import { config } from "./src/config/config.js";
 import logger from "./src/utils/logger.js";
 
 // Graceful shutdown function
