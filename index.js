@@ -1,30 +1,56 @@
 // index.js
-import 'dotenv/config';
-import { bot, app } from './src/bot.js';
-import { config } from './config/config.js';
+import "dotenv/config";
 
-console.log('Bot is starting...');
-console.log(`Environment: ${config.NODE_ENV}`);
+import { bot } from "./src/bot.js";
+import { config } from "./config/config.js";
+import logger from "./src/utils/logger.js";
+
+// Graceful shutdown function
+const shutdown = async signal => {
+  logger.info(`Received ${signal}, starting graceful shutdown...`);
+  try {
+    await bot.stop(signal);
+    logger.info("Bot stopped successfully");
+    process.exit(0);
+  } catch (error) {
+    logger.error("Error during shutdown:", error);
+    process.exit(1);
+  }
+};
+
+// Handle termination signals
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
 
 // Error handling for bot operations
-bot.on('error', (error) => {
-  console.error('Telegram Bot Error:', error);
+bot.on("error", error => {
+  logger.error("Telegram Bot Error:", error);
 });
 
 // Global error handlers
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+process.on("uncaughtException", error => {
+  logger.error("Uncaught Exception:", error);
+  shutdown("uncaughtException");
 });
 
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
+process.on("unhandledRejection", error => {
+  logger.error("Unhandled Rejection:", error);
+  shutdown("unhandledRejection");
 });
 
 // Start the bot
-bot.launch();
+const startBot = async () => {
+  try {
+    logger.info("Bot is starting...");
+    logger.info(`Environment: ${config.NODE_ENV}`);
 
-console.log('Bot is running...');
+    await bot.launch();
 
-// Handle termination signals to properly stop the bot
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    logger.info("Bot is running...");
+  } catch (error) {
+    logger.error("Failed to start bot:", error);
+    process.exit(1);
+  }
+};
+
+startBot();
