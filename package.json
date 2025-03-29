@@ -22,7 +22,10 @@
     "joi": "^17.12.2",
     "compression": "^1.7.4",
     "express-rate-limit": "^7.1.5",
-    "express-validator": "^7.0.1"
+    "express-validator": "^7.0.1",
+    "mongoose": "^7.6.3",
+    "node-schedule": "^2.1.1",
+    "luxon": "^3.4.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",
