@@ -34,5 +34,7 @@ coverage/
 tmp/
 temp/ 
 
-#Cursor
+
+# Cursor
 .cursor
+
