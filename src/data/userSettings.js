@@ -11,12 +11,14 @@ const USER_SETTINGS_FILE = path.join(__dirname, "userSettings.json");
 
 // User settings structure
 const defaultUserSettings = {
-  zodiacSign: null,
-  autoHoroscope: false,
   lastCardDate: null,
   cardUsageToday: 0,
   paidCards: 0,
   language: "ru",
+  name: null,
+  birthdate: null,
+  birthtime: null,
+  personalDataSet: false,
 };
 
 /**
@@ -64,24 +66,6 @@ export const saveUserSettings = (userId, settings) => {
   } catch (error) {
     console.error("Error saving user settings:", error);
     return false;
-  }
-};
-
-/**
- * Gets a list of users with auto horoscope sending enabled
- * @returns {Array} Array of user IDs with auto horoscope sending enabled
- */
-export const getUsersWithAutoHoroscope = () => {
-  initSettingsFile();
-
-  try {
-    const settings = JSON.parse(fs.readFileSync(USER_SETTINGS_FILE, "utf8"));
-    return Object.entries(settings)
-      .filter(([, userData]) => userData.autoHoroscope && userData.zodiacSign)
-      .map(([userId]) => parseInt(userId, 10));
-  } catch (error) {
-    console.error("Error getting users with auto horoscope:", error);
-    return [];
   }
 };
 
