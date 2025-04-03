@@ -1,11 +1,7 @@
 export const MESSAGES = {
-  START: "Привет! Я бот с гороскопом и предсказаниями. Выберите интересующую вас функцию в меню.",
-  HELP: "Я умею предоставлять гороскоп на день и играть в игру 'Вытянуть карту дня'. Используйте команды /horoscope и /card соответственно.",
+  START: "Добро пожаловать! Для начала работы с ботом, пожалуйста, заполните персональные данные.",
+  HELP: "Я умею предоставлять персональные астрологические прогнозы и играть в игру 'Вытянуть карту дня'. Используйте кнопки в меню для навигации.",
   ERROR: "Произошла ошибка. Пожалуйста, попробуйте позже.",
-  HOROSCOPE_INTRO: "Выберите ваш знак зодиака для получения гороскопа на сегодня:",
-  HOROSCOPE_AUTO_SETUP: "Хотите получать гороскоп автоматически каждое утро?",
-  HOROSCOPE_AUTO_ON: "Отлично! Теперь вы будете получать гороскоп каждое утро в 8:00.",
-  HOROSCOPE_AUTO_OFF: "Автоматическая отправка гороскопа отключена.",
   CARD_INTRO: "Нажмите кнопку, чтобы вытянуть карту дня с предсказанием.",
   CARD_BUTTON: "Вытянуть карту",
   CARD_PAID_BUTTON: "Вытянуть карту за 1$",
@@ -17,37 +13,44 @@ export const MESSAGES = {
   CARD_NEXT_FREE: "Следующая бесплатная карта будет доступна завтра.",
   CARD_PAID_DISABLED:
     "Платные карты временно недоступны. Функция будет добавлена в ближайшее время. Возвращайтесь завтра за новой бесплатной картой!",
+  ASTROLOGY_INTRO: "Для получения персонального астрологического прогноза укажите информацию о рождении.",
+  ASTROLOGY_FORM: "Заполните форму данных для анализа",
+  ASTROLOGY_NAME_PROMPT: "Введите ваше имя:",
+  ASTROLOGY_BIRTHDATE_PROMPT: "Введите дату рождения (ГГГГ-ММ-ДД):",
+  ASTROLOGY_BIRTHTIME_PROMPT: "Введите время рождения (ЧЧ:ММ):",
+  ASTROLOGY_CANCEL: "Отмена",
+  ASTROLOGY_PROCESSING: "Получаем астрологические данные... Это может занять некоторое время.",
+  ASTROLOGY_COMPLETE: "Ваш персональный астрологический отчет готов!",
+  ASTROLOGY_ERROR: "Не удалось получить астрологические данные. Убедитесь, что введены корректные данные.",
+  PERSONAL_DATA_SAVED: "Ваши данные успешно сохранены! Теперь вы можете получить персональный гороскоп.",
+  GET_HOROSCOPE: "Получить гороскоп",
+  MENU_BUTTON: "Главное меню",
+  BACK_BUTTON: "Назад",
+  PERSONAL_DATA_REQUIRED: "Для получения гороскопа необходимо сначала заполнить персональные данные.",
+  FILL_PERSONAL_DATA: "Заполнить данные для гороскопа",
+  TAROT_BUTTON: "Получить карту Таро",
+  TAROT_PROCESSING: "Выбираю карту Таро... Одну секунду.",
+  TAROT_ERROR: "Не удалось получить карту Таро. Пожалуйста, попробуйте позже.",
 };
 
 export const COMMANDS = {
   START: "start",
   HELP: "help",
-  HOROSCOPE: "horoscope",
   CARD: "card",
   SETTINGS: "settings",
+  ASTROLOGY: "astrology",
+  MENU: "menu",
+  GET_HOROSCOPE: "gethoroscope",
+  TAROT: "tarot",
 };
 
 export const COMMAND_DESCRIPTIONS = {
   START: "Начать работу с ботом",
   HELP: "Показать справку по командам",
-  HOROSCOPE: "Получить гороскоп на день",
   CARD: "Вытянуть карту дня с предсказанием",
   SETTINGS: "Настройки уведомлений",
-};
-
-export const ZODIAC_SIGNS = {
-  ARIES: "Овен",
-  TAURUS: "Телец",
-  GEMINI: "Близнецы",
-  CANCER: "Рак",
-  LEO: "Лев",
-  VIRGO: "Дева",
-  LIBRA: "Весы",
-  SCORPIO: "Скорпион",
-  SAGITTARIUS: "Стрелец",
-  CAPRICORN: "Козерог",
-  AQUARIUS: "Водолей",
-  PISCES: "Рыбы",
+  ASTROLOGY: "Персональный астрологический прогноз",
+  TAROT: "Получить карту Таро",
 };
 
 export const CARD_TYPES = {
@@ -75,3 +78,24 @@ export const BOT_CONFIG = {
 };
 
 export const DAILY_NOTIFICATION_TIME = "0 8 * * *"; // Каждый день в 8:00
+
+// RoxyAPI configuration
+export const ROXY_API_CONFIG = {
+  BASE_URL: "https://roxyapi.com/api/v1/data/astro",
+  ENDPOINTS: {
+    ZODIAC_DETAILS: "/astrology/zodiac",
+    PERSONALITY: "/astrology/personality",
+    TAROT_SINGLE_CARD: "/tarot/single-card-draw",
+  },
+  TIMEOUT: 15000, // 15 seconds
+  RETRIES: 2,
+};
+
+// Card service configuration
+export const CARD_SERVICE_CONFIG = {
+  PAID_CARDS_ENABLED: false,
+  API_URL: "https://api.example.com/tarot-cards",
+  API_TIMEOUT: 10000,
+  MAX_RETRIES: 2,
+  RETRY_DELAY: 1000,
+};

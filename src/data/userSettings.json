@@ -2,9 +2,23 @@
   "644256513": {
     "zodiacSign": "Водолей",
     "autoHoroscope": false,
-    "lastCardDate": "2025-03-31T12:57:01.064Z",
+    "lastCardDate": "2025-04-03T12:00:39.272Z",
     "language": "ru",
     "cardUsageToday": 1,
-    "paidCards": 0
+    "paidCards": 0,
+    "name": "Денис",
+    "birthdate": "1997-02-08",
+    "birthtime": "04:40",
+    "personalDataSet": true
+  },
+  "8050056383": {
+    "lastCardDate": null,
+    "cardUsageToday": 0,
+    "paidCards": 0,
+    "language": "ru",
+    "name": "Ольга",
+    "birthdate": "2000-11-11",
+    "birthtime": "03:03",
+    "personalDataSet": false
   }
 }

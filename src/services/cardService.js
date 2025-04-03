@@ -1,12 +1,13 @@
 import { Markup } from "telegraf";
-import { MESSAGES } from "../utils/constants.js";
+import { MESSAGES, CARD_SERVICE_CONFIG, ROXY_API_CONFIG } from "../utils/constants.js";
 import { drawRandomCard, formatCardPrediction } from "../data/cards.js";
 import { checkCardAvailability, updateCardUsage } from "../data/userSettings.js";
-import { CardApiService } from "./cardApiService.js";
 import logger from "../utils/logger.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import axios from "axios";
+import { config } from "../config/config.js";
 
 // Get absolute path to the images directory
 const __filename = fileURLToPath(import.meta.url);
@@ -15,9 +16,6 @@ const IMAGES_DIR = path.join(__dirname, "../assets/images");
 
 // Cache of users' last cards to prevent repetitions
 const userLastCardCache = new Map();
-
-// Flag for temporarily disabling paid cards
-const PAID_CARDS_ENABLED = false;
 
 export class CardService {
   /**
@@ -30,7 +28,7 @@ export class CardService {
 
     if (freeAvailable) {
       buttons.push([{ text: MESSAGES.CARD_BUTTON, callback_data: "draw_card" }]);
-    } else if (PAID_CARDS_ENABLED) {
+    } else if (CARD_SERVICE_CONFIG.PAID_CARDS_ENABLED) {
       buttons.push([{ text: MESSAGES.CARD_PAID_BUTTON, callback_data: "draw_paid_card" }]);
     } else {
       // If paid cards are disabled, show an inactive button
@@ -77,6 +75,80 @@ export class CardService {
   }
 
   /**
+   * Gets a unique card from the API
+   * @param {string} excludeId - ID of the card to exclude
+   * @returns {Promise<Object>} Card data object
+   */
+  static async getUniqueCard(excludeId = null, retryCount = 0) {
+    try {
+      logger.info(`Fetching unique card from API, attempt ${retryCount + 1}`);
+
+      // API request
+      const response = await axios.get(CARD_SERVICE_CONFIG.API_URL, {
+        timeout: CARD_SERVICE_CONFIG.API_TIMEOUT,
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "TelegramBot/1.0",
+        },
+        params: {
+          exclude: excludeId,
+        },
+      });
+
+      // Check the status and presence of data
+      if (response.status !== 200 || !response.data) {
+        throw new Error(`API responded with code ${response.status} or returned empty data`);
+      }
+
+      // Format the data to the correct format
+      const cardData = CardService.formatApiResponse(response.data);
+
+      logger.info(`Successfully fetched unique card from API`);
+      return cardData;
+    } catch (error) {
+      // Check the possibility of retrying
+      if (retryCount < CARD_SERVICE_CONFIG.MAX_RETRIES) {
+        logger.warn(`Retry ${retryCount + 1} for card API`);
+        await new Promise(resolve => setTimeout(resolve, CARD_SERVICE_CONFIG.RETRY_DELAY));
+        return CardService.getUniqueCard(excludeId, retryCount + 1);
+      }
+
+      // Log the error and return the local card
+      logger.error("Error fetching card from API, using local fallback:", error);
+      return drawRandomCard(excludeId);
+    }
+  }
+
+  /**
+   * Formats the API response to the correct format for the bot
+   * @param {Object} apiResponse - Response from the API
+   * @returns {Object} Formatted card object
+   */
+  static formatApiResponse(apiResponse) {
+    try {
+      const card = apiResponse.card || apiResponse;
+
+      return {
+        id: card.id || `api_card_${Date.now()}`,
+        name: card.name || "Неизвестная карта",
+        image: card.image_url || null,
+        prediction: card.description || card.meaning || "Эта карта говорит о неожиданных изменениях в вашей жизни.",
+        fromApi: true,
+      };
+    } catch (error) {
+      logger.error("Error formatting API response:", error);
+      // Return a simple card in case of an error
+      return {
+        id: `fallback_${Date.now()}`,
+        name: "Мистическая карта",
+        image: null,
+        prediction: "Сегодня вас ждет что-то особенное. Будьте внимательны к знакам вокруг.",
+        fromApi: true,
+      };
+    }
+  }
+
+  /**
    * Handles the "Draw card" button click
    * @param {Object} ctx - Telegraf context
    */
@@ -111,7 +183,7 @@ export class CardService {
 
       try {
         // Try to get a card from the API
-        card = await CardApiService.getUniqueCard(lastCardId);
+        card = await CardService.getUniqueCard(lastCardId);
       } catch (apiError) {
         logger.error("Error getting card from API, falling back to local cards", { userId, error: apiError.message });
         // If API doesn't work, use a local card
@@ -201,7 +273,7 @@ export class CardService {
       const userId = ctx.from.id;
       logger.info("User requested paid card", { userId });
 
-      if (!PAID_CARDS_ENABLED) {
+      if (!CARD_SERVICE_CONFIG.PAID_CARDS_ENABLED) {
         await ctx.answerCbQuery("Платные карты временно недоступны", { show_alert: true });
         return;
       }
@@ -234,7 +306,7 @@ export class CardService {
 
       try {
         // Try to get a card from the API
-        card = await CardApiService.getUniqueCard(lastCardId);
+        card = await CardService.getUniqueCard(lastCardId);
       } catch (apiError) {
         logger.error("Error getting paid card from API, falling back to local cards", {
           userId,
@@ -333,5 +405,150 @@ export class CardService {
         logger.error("Error creating images directory:", error);
       }
     }
+  }
+
+  /**
+   * Gets a single Tarot card
+   * @param {number} reversedProbability - Probability of getting a reversed card (0-1)
+   * @returns {Promise<Object>} Card data
+   */
+  static async getSingleCard(reversedProbability = 0.2) {
+    try {
+      logger.info(`Fetching single tarot card from RoxyAPI`);
+
+      const response = await axios.get(`${ROXY_API_CONFIG.BASE_URL}${ROXY_API_CONFIG.ENDPOINTS.TAROT_SINGLE_CARD}`, {
+        params: {
+          token: config.ROXY_API_TOKEN,
+          reversed_probability: reversedProbability,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+        timeout: ROXY_API_CONFIG.TIMEOUT,
+      });
+
+      if (response.status !== 200 || !response.data) {
+        throw new Error(`RoxyAPI responded with code ${response.status}`);
+      }
+
+      logger.info(`Successfully fetched single tarot card`);
+      return response.data;
+    } catch (error) {
+      logger.error(`Error fetching tarot card: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Formats Tarot card data for display
+   * @param {Object} card - Card data
+   * @returns {Promise<string>} Formatted text
+   */
+  static async formatCardData(card) {
+    try {
+      if (!card || !card.name) {
+        return "Не удалось получить информацию о карте Таро.";
+      }
+
+      // Get emoji for the card based on name or type
+      const cardEmoji = CardService.getCardEmoji(card);
+
+      // Use original card values
+      const meaningTitle = card.is_reversed ? "Перевернутое значение" : "Значение";
+      const meaning = card.is_reversed ? card.reversed_meaning : card.meaning;
+      const message = card.message || "";
+
+      // Format the response text
+      let result = `${cardEmoji} *Карта Таро: ${card.name}* ${cardEmoji}\n\n`;
+
+      if (card.is_reversed) {
+        result += "⚠️ *Карта перевернута* ⚠️\n\n";
+      }
+
+      result += `*${meaningTitle}:*\n${meaning}\n\n`;
+
+      if (message) {
+        result += `*Послание карты:*\n${message}\n\n`;
+      }
+
+      if (card.card_type) {
+        result += `*Тип:* ${card.card_type}\n`;
+      }
+
+      if (card.sequence) {
+        result += `*Номер:* ${card.sequence}\n`;
+      }
+
+      return result;
+    } catch (error) {
+      logger.error(`Error formatting tarot card data: ${error.message}`);
+      return "Произошла ошибка при форматировании данных карты Таро.";
+    }
+  }
+
+  /**
+   * Returns emoji for Tarot card
+   * @param {Object} card - Card data
+   * @returns {string} Emoji
+   */
+  static getCardEmoji(card) {
+    // If card is reversed, use a different set of emojis
+    if (card.is_reversed) {
+      return "🔮";
+    }
+
+    // Check card type
+    if (card.card_type === "major") {
+      return "✨";
+    }
+
+    // Determine emoji based on card name
+    const cardName = card.name.toLowerCase();
+
+    if (cardName.includes("cup") || cardName.includes("chalice")) {
+      return "🏆";
+    } else if (cardName.includes("sword")) {
+      return "⚔️";
+    } else if (cardName.includes("wand") || cardName.includes("staff")) {
+      return "🪄";
+    } else if (cardName.includes("pentacle") || cardName.includes("coin")) {
+      return "💰";
+    } else if (cardName.includes("fool")) {
+      return "🃏";
+    } else if (cardName.includes("star")) {
+      return "⭐";
+    } else if (cardName.includes("sun")) {
+      return "☀️";
+    } else if (cardName.includes("moon")) {
+      return "🌙";
+    } else if (cardName.includes("devil")) {
+      return "😈";
+    } else if (cardName.includes("tower")) {
+      return "🗼";
+    } else if (cardName.includes("death")) {
+      return "💀";
+    } else if (cardName.includes("emperor")) {
+      return "👑";
+    } else if (cardName.includes("empress")) {
+      return "👸";
+    } else if (cardName.includes("lovers")) {
+      return "❤️";
+    } else if (cardName.includes("chariot")) {
+      return "🏎️";
+    } else if (cardName.includes("strength")) {
+      return "🦁";
+    } else if (cardName.includes("hermit")) {
+      return "🧙";
+    } else if (cardName.includes("wheel")) {
+      return "🎡";
+    } else if (cardName.includes("justice")) {
+      return "⚖️";
+    } else if (cardName.includes("judgment")) {
+      return "📯";
+    } else if (cardName.includes("world")) {
+      return "🌍";
+    }
+
+    return "🃏"; // General emoji for other cards
   }
 }
