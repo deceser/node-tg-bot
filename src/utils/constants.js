@@ -4,15 +4,11 @@ export const MESSAGES = {
   ERROR: "Произошла ошибка. Пожалуйста, попробуйте позже.",
   CARD_INTRO: "Нажмите кнопку, чтобы вытянуть карту дня с предсказанием.",
   CARD_BUTTON: "Вытянуть карту",
-  CARD_PAID_BUTTON: "Вытянуть карту за 1$",
-  CARD_PAID_BUTTON_DISABLED: "Платные карты (скоро)",
-  CARD_LIMIT_REACHED: "Вы уже вытянули бесплатную карту сегодня. Следующая карта будет стоить 1$.",
-  CARD_PAID_CONFIRMATION: "Подтвердите покупку карты за 1$.",
-  CARD_PAID_SUCCESS: "Спасибо за покупку! Вот ваша карта:",
-  CARD_PAID_CANCEL: "Покупка отменена. Возвращайтесь завтра за новой бесплатной картой!",
+  CARD_LIMIT_REACHED: "Вы уже вытянули карту сегодня. Следующая карта будет доступна завтра.",
   CARD_NEXT_FREE: "Следующая бесплатная карта будет доступна завтра.",
-  CARD_PAID_DISABLED:
-    "Платные карты временно недоступны. Функция будет добавлена в ближайшее время. Возвращайтесь завтра за новой бесплатной картой!",
+  CARD_DRAWING: "Выбираю карту Таро... Одну секунду.",
+  CARD_ERROR: "Не удалось получить карту Таро. Пожалуйста, попробуйте позже.",
+  CARD_INTERPRETATION_INTRO: "Обдумайте значение этой карты в контексте вашей ситуации.",
   ASTROLOGY_INTRO: "Для получения персонального астрологического прогноза укажите информацию о рождении.",
   ASTROLOGY_FORM: "Заполните форму данных для анализа",
   ASTROLOGY_NAME_PROMPT: "Введите ваше имя:",
@@ -26,17 +22,24 @@ export const MESSAGES = {
   GET_HOROSCOPE: "Получить гороскоп",
   MENU_BUTTON: "Главное меню",
   BACK_BUTTON: "Назад",
+  NO_PERSONAL_DATA: "Для получения гороскопа необходимо сначала заполнить персональные данные.",
+  FILL_DATA_BUTTON: "Заполнить данные",
   PERSONAL_DATA_REQUIRED: "Для получения гороскопа необходимо сначала заполнить персональные данные.",
   FILL_PERSONAL_DATA: "Заполнить данные для гороскопа",
   TAROT_BUTTON: "Получить карту Таро",
   TAROT_PROCESSING: "Выбираю карту Таро... Одну секунду.",
   TAROT_ERROR: "Не удалось получить карту Таро. Пожалуйста, попробуйте позже.",
+  // New messages for API error handling
+  API_ERROR_GENERAL: "Сервис временно недоступен. Пожалуйста, попробуйте позже.",
+  API_ERROR_TIMEOUT: "Превышено время ожидания ответа от сервиса. Пожалуйста, попробуйте позже.",
+  API_ERROR_AUTH: "Ошибка авторизации при доступе к сервису. Администратор был уведомлен.",
+  API_ERROR_RATE_LIMIT: "Превышен лимит запросов к сервису. Пожалуйста, попробуйте позже.",
+  API_ERROR_SERVER: "Сервер временно недоступен. Мы работаем над устранением проблемы.",
 };
 
 export const COMMANDS = {
   START: "start",
   HELP: "help",
-  CARD: "card",
   SETTINGS: "settings",
   ASTROLOGY: "astrology",
   MENU: "menu",
@@ -47,7 +50,6 @@ export const COMMANDS = {
 export const COMMAND_DESCRIPTIONS = {
   START: "Начать работу с ботом",
   HELP: "Показать справку по командам",
-  CARD: "Вытянуть карту дня с предсказанием",
   SETTINGS: "Настройки уведомлений",
   ASTROLOGY: "Персональный астрологический прогноз",
   TAROT: "Получить карту Таро",
@@ -77,8 +79,6 @@ export const BOT_CONFIG = {
   },
 };
 
-export const DAILY_NOTIFICATION_TIME = "0 8 * * *"; // Каждый день в 8:00
-
 // RoxyAPI configuration
 export const ROXY_API_CONFIG = {
   BASE_URL: "https://roxyapi.com/api/v1/data/astro",
@@ -89,13 +89,20 @@ export const ROXY_API_CONFIG = {
   },
   TIMEOUT: 15000, // 15 seconds
   RETRIES: 2,
+  RETRY_DELAY: 1000, // Delay between retries in ms
+  BACKOFF_FACTOR: 1.5, // Exponential backoff factor
 };
 
-// Card service configuration
-export const CARD_SERVICE_CONFIG = {
-  PAID_CARDS_ENABLED: false,
-  API_URL: "https://api.example.com/tarot-cards",
-  API_TIMEOUT: 10000,
-  MAX_RETRIES: 2,
-  RETRY_DELAY: 1000,
+// Constants for Tarot card formatting
+export const TAROT_FORMAT = {
+  NAME_PREFIX: "**Карта:**",
+  MEANING_PREFIX: "**Значение:**",
+  REVERSED_PREFIX: "**В перевернутом положении:**",
+  MESSAGE_PREFIX: "**Послание:**",
+  REVERSED_INDICATOR: "(Перевернутая)",
+};
+
+// Parameters for card requests
+export const TAROT_PARAMS = {
+  REVERSED_PROBABILITY: 0.3, // Probability of getting a reversed card
 };
