@@ -1,136 +1,169 @@
 import fs from "fs";
-import path from "path";
 import { fileURLToPath } from "url";
+import { join, dirname } from "path";
 
-// Get the absolute path to the current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import logger from "../utils/logger.js";
+import { formatDate } from "../utils/validation.js";
 
-// Path to the file storing user settings
-const USER_SETTINGS_FILE = path.join(__dirname, "userSettings.json");
+// Setup data path
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const dataFilePath = join(__dirname, "../../data/users.json");
 
-// User settings structure
-const defaultUserSettings = {
-  lastCardDate: null,
-  cardUsageToday: 0,
-  paidCards: 0,
-  language: "ru",
+// In-memory storage for user settings
+let userSettings = {};
+
+// Default user settings
+const DEFAULT_USER_SETTINGS = {
   name: null,
   birthdate: null,
   birthtime: null,
   personalDataSet: false,
+  cardLastUsed: null,
+  preferences: {
+    notifications: true,
+    language: "en",
+  },
 };
 
 /**
- * Initializes the settings file if it doesn't exist
+ * Load user settings from file if exists
  */
-const initSettingsFile = () => {
-  if (!fs.existsSync(USER_SETTINGS_FILE)) {
-    fs.writeFileSync(USER_SETTINGS_FILE, JSON.stringify({}), "utf8");
+function loadUserSettings() {
+  try {
+    if (fs.existsSync(dataFilePath)) {
+      const data = fs.readFileSync(dataFilePath, "utf8");
+      const parsed = JSON.parse(data);
+      userSettings = parsed.users || {};
+      logger.info("User settings loaded successfully");
+    } else {
+      logger.info("User settings file not found, using empty settings");
+      userSettings = {};
+    }
+  } catch (error) {
+    logger.error("Error loading user settings:", { error: error.message });
+    userSettings = {};
   }
-};
+}
 
 /**
- * Gets user settings
- * @param {number} userId - User ID
- * @returns {Object} Object with user settings
+ * Save user settings to file
  */
-export const getUserSettings = userId => {
-  initSettingsFile();
+function saveUserSettingsToFile() {
+  try {
+    // Ensure directory exists
+    const dir = dirname(dataFilePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(dataFilePath, JSON.stringify({ users: userSettings }, null, 2), "utf8");
+    logger.info("User settings saved to file");
+    return true;
+  } catch (error) {
+    logger.error("Error saving user settings to file:", { error: error.message });
+    return false;
+  }
+}
+
+// Load settings on module initialization
+loadUserSettings();
+
+/**
+ * Gets user settings by ID, creating default settings if not found
+ * @param {string|number} userId - The user ID
+ * @returns {Object} User settings object
+ */
+export function getUserSettings(userId) {
+  if (!userId) {
+    logger.warn("Attempted to get settings with no userId");
+    return { ...DEFAULT_USER_SETTINGS };
+  }
 
   try {
-    const settings = JSON.parse(fs.readFileSync(USER_SETTINGS_FILE, "utf8"));
-    return settings[userId] || { ...defaultUserSettings };
+    // Auto-create user if not exists
+    if (!userSettings[userId]) {
+      userSettings[userId] = { ...DEFAULT_USER_SETTINGS };
+      // Async save without blocking
+      setTimeout(() => saveUserSettingsToFile(), 0);
+    }
+
+    return userSettings[userId];
   } catch (error) {
-    console.error("Error reading user settings:", error);
-    return { ...defaultUserSettings };
+    logger.error("Error getting user settings:", { userId, error: error.message });
+    return { ...DEFAULT_USER_SETTINGS };
   }
-};
+}
 
 /**
  * Saves user settings
- * @param {number} userId - User ID
- * @param {Object} settings - Settings to save
+ * @param {string|number} userId - The user ID
+ * @param {Object} settings - Settings to save (partial)
+ * @returns {boolean} Success status
  */
-export const saveUserSettings = (userId, settings) => {
-  initSettingsFile();
-
-  try {
-    const allSettings = JSON.parse(fs.readFileSync(USER_SETTINGS_FILE, "utf8"));
-    allSettings[userId] = {
-      ...getUserSettings(userId),
-      ...settings,
-    };
-    fs.writeFileSync(USER_SETTINGS_FILE, JSON.stringify(allSettings, null, 2), "utf8");
-    return true;
-  } catch (error) {
-    console.error("Error saving user settings:", error);
+export function saveUserSettings(userId, settings) {
+  if (!userId) {
+    logger.warn("Attempted to save settings with no userId");
     return false;
   }
-};
+
+  try {
+    // Get current settings or create new
+    const currentSettings = userSettings[userId] || { ...DEFAULT_USER_SETTINGS };
+
+    // Update settings
+    userSettings[userId] = {
+      ...currentSettings,
+      ...settings,
+    };
+
+    // Async save without blocking
+    setTimeout(() => saveUserSettingsToFile(), 0);
+    return true;
+  } catch (error) {
+    logger.error("Error saving user settings:", { userId, error: error.message });
+    return false;
+  }
+}
 
 /**
- * Checks if card drawing is available for the user
- * @param {number} userId - User ID
- * @returns {Object} Object with information about card availability
+ * Checks if a user can draw a card today
+ * @param {string|number} userId - The user ID
+ * @returns {Object} Object with card availability status
  */
-export const checkCardAvailability = userId => {
-  const settings = getUserSettings(userId);
-  const today = new Date().toISOString().split("T")[0];
-  const lastCardDate = settings.lastCardDate ? new Date(settings.lastCardDate).toISOString().split("T")[0] : null;
+export function checkCardAvailability(userId) {
+  try {
+    const settings = getUserSettings(userId);
+    const today = formatDate(new Date());
 
-  // If today is not yet card drawing or this is the first request
-  if (lastCardDate !== today) {
+    // Check if the user has used their free card today
+    const freeAvailable = settings.cardLastUsed !== today;
+
     return {
-      available: true,
-      freeAvailable: true,
-      paidAvailable: true,
-      freeCardsLeft: 1,
-      paidCards: settings.paidCards || 0,
+      freeAvailable,
+    };
+  } catch (error) {
+    logger.error("Error checking card availability:", { userId, error: error.message });
+    // Default to no availability on error
+    return {
+      freeAvailable: false,
     };
   }
-
-  // Если уже брали бесплатную карту сегодня
-  const cardUsageToday = settings.cardUsageToday || 0;
-  return {
-    available: true,
-    freeAvailable: cardUsageToday < 1,
-    paidAvailable: true,
-    freeCardsLeft: Math.max(0, 1 - cardUsageToday),
-    paidCards: settings.paidCards || 0,
-  };
-};
+}
 
 /**
- * Updates the card usage counter
- * @param {number} userId - User ID
- * @param {boolean} isPaid - Whether the card is paid
- * @returns {boolean} Success of the operation
+ * Saves card usage for a user
+ * @param {string|number} userId - The user ID
+ * @returns {boolean} Success status
  */
-export const updateCardUsage = (userId, isPaid = false) => {
-  const settings = getUserSettings(userId);
-  const today = new Date().toISOString().split("T")[0];
-  const lastCardDate = settings.lastCardDate ? new Date(settings.lastCardDate).toISOString().split("T")[0] : null;
+export function saveCardUsage(userId) {
+  try {
+    const today = formatDate(new Date());
 
-  let cardUsageToday = settings.cardUsageToday || 0;
-  let paidCards = settings.paidCards || 0;
-
-  // Reset the counter if a new day has started
-  if (lastCardDate !== today) {
-    cardUsageToday = 0;
+    return saveUserSettings(userId, {
+      cardLastUsed: today,
+    });
+  } catch (error) {
+    logger.error("Error saving card usage:", { userId, error: error.message });
+    return false;
   }
-
-  if (isPaid) {
-    // Decrease the paid card counter
-    paidCards = Math.max(0, paidCards - 1);
-  } else {
-    // Increase the free card usage counter
-    cardUsageToday++;
-  }
-
-  return saveUserSettings(userId, {
-    lastCardDate: new Date().toISOString(),
-    cardUsageToday,
-    paidCards,
-  });
-};
+}
