@@ -1,6 +1,7 @@
 import express from "express";
-import { config } from "../config/config.js";
+
 import logger from "../utils/logger.js";
+import { config } from "../config/config.js";
 
 export const setupRoutes = (app, bot) => {
   const router = express.Router();
