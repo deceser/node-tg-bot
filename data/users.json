@@ -1,0 +1,15 @@
+{
+  "users": {
+    "644256513": {
+      "name": "Денис",
+      "birthdate": "1997-02-08",
+      "birthtime": "04:40",
+      "personalDataSet": true,
+      "cardLastUsed": "2025-04-03",
+      "preferences": {
+        "notifications": true,
+        "language": "en"
+      }
+    }
+  }
+}
