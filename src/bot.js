@@ -1,12 +1,15 @@
 // src/bot.js
 import express from "express";
 import { Telegraf, session } from "telegraf";
+
 import { config } from "./config/config.js";
+import { setupCommands } from "./commands/setupCommands.js";
+
 import logger from "./utils/logger.js";
 import { BOT_CONFIG, SERVER_CONFIG } from "./utils/constants.js";
-import { setupMiddleware } from "./server/middleware.js";
+
 import { setupRoutes } from "./server/routes.js";
-import { setupCommands } from "./commands/setupCommands.js";
+import { setupMiddleware } from "./server/middleware.js";
 
 // Create a set for tracking recent user requests
 const recentRequests = new Map();
@@ -69,9 +72,12 @@ bot.use(async (ctx, next) => {
 });
 
 // Setup bot commands
-setupCommands(bot).catch(error => {
+try {
+  setupCommands(bot);
+  logger.info("Commands setup successfully");
+} catch (error) {
   logger.error("Failed to setup commands:", error);
-});
+}
 
 // Setup Express routes
 setupRoutes(app, bot);
