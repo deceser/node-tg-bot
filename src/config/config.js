@@ -10,4 +10,6 @@ export const config = {
   // Admin IDs for access to administrative functions
   // (comma-separated list in .env file: ADMIN_IDS=123456789,987654321)
   ADMIN_IDS: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(",") : [],
+  // URL для доступа к серверу извне
+  // SERVER_URL: process.env.SERVER_URL || "https://your-server-url.com",
 };
