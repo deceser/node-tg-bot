@@ -46,11 +46,9 @@ export class MessageService {
 
   // Text Handlers
   static handleText = ctx => {
-    const textHandler = new TextHandler();
-    const handleTextTemp = TextHandler.handleText;
-
-    // Заменяем строки на реальные функции в обработчике текста
-    return handleTextTemp(ctx).then(result => {
+    // Вызываем обработчик текста, который возвращает строку или результат
+    return TextHandler.handleText(ctx).then(result => {
+      // Если результат - строка, обрабатываем её соответствующей функцией
       if (result === "SettingsService.handleProfileEdit") {
         return SettingsService.handleProfileEdit(ctx);
       } else if (result === "PersonalDataHandler.handlePersonalDataInput") {
@@ -62,8 +60,9 @@ export class MessageService {
       } else if (result === "CommandHandler.handleHelp") {
         return CommandHandler.handleHelp(ctx);
       } else if (result === "ServiceHandler.handleTarotCommand") {
-        return ServiceHandler.handleTarotCommand(ctx);
+        return MessageService.handleTarotCommand(ctx);
       }
+      // Если это не строка, возвращаем результат как есть
       return result;
     });
   };
@@ -77,23 +76,26 @@ export class MessageService {
     return AstrologyService.handleAstrologyRequest(ctx);
   };
 
-  static handleTarotCommand = ctx => {
-    // Заменяем строку на реальную функцию в ServiceHandler
-    const handleTarotTemp = ServiceHandler.handleTarotCommand;
+  static handleTarotCommand = async ctx => {
+    const userId = ctx.from.id;
+    logger.info("User requested tarot card", { userId });
 
-    return handleTarotTemp(ctx).then(result => {
-      if (typeof result === "string") {
-        // Обрабатываем новый формат ответа
-        const [messageType, buttonsEnabled] = result.split(":");
+    // Сначала проверяем доступность карты через ServiceHandler
+    const availability = await ServiceHandler.handleTarotCommand(ctx);
+    if (typeof availability === "string") {
+      // Обрабатываем новый формат ответа
+      const [messageType, buttonsEnabled] = availability.split(":");
 
-        if (messageType === "CARD_LIMIT_REACHED") {
-          return ctx.reply(MESSAGES.CARD_LIMIT_REACHED, CardService.getCardButtons(buttonsEnabled === "true"));
-        } else if (messageType === "CARD_INTRO") {
-          return ctx.reply(MESSAGES.CARD_INTRO, CardService.getCardButtons(buttonsEnabled === "true"));
-        }
+      if (messageType === "CARD_LIMIT_REACHED") {
+        // Если карта недоступна, показываем сообщение
+        return ctx.reply(MESSAGES.CARD_LIMIT_REACHED, CardService.getCardButtons(buttonsEnabled === "true"));
+      } else if (messageType === "CARD_INTRO") {
+        // Если карта доступна, вместо показа интро сразу рисуем карту
+        return CardService.handleDrawCard(ctx);
       }
-      return result;
-    });
+    }
+
+    return availability;
   };
 }
 

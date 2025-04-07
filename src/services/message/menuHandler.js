@@ -13,15 +13,21 @@ export class MenuHandler {
     const settings = getUserSettings(userId);
     const name = settings.name || ctx.from.first_name;
 
-    // Create menu buttons
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.callback("🔮 " + MESSAGES.GET_HOROSCOPE, "get_astrology")],
-      [Markup.button.callback("🎴 " + MESSAGES.TAROT_BUTTON, `command:${COMMANDS.TAROT}`)],
-      [Markup.button.callback("⚙️ Настройки", `command:${COMMANDS.SETTINGS}`)],
-      [Markup.button.callback("❓ Помощь", `command:${COMMANDS.HELP}`)],
-    ]);
+    // Create menu buttons as a keyboard with 2 columns
+    // const keyboard = Markup.keyboard([
+    //   ["🔮 " + MESSAGES.GET_HOROSCOPE, "🎴 " + MESSAGES.TAROT_BUTTON],
+    //   ["⚙️ Настройки", "❓ Помощь"],
+    // ])
+    //   .resize() // Установка resize_keyboard=true для лучшего отображения на мобильных устройствах
+    //   .persistent(); // Установка one_time_keyboard=false, чтобы клавиатура не исчезала
 
-    const menuText = `Привет, ${name}!\nВыберите интересующую вас функцию:`;
-    return ctx.reply(menuText, keyboard);
+    // const menuText = `Привет, ${name}!\nВыберите интересующую вас функцию:`;
+
+    // try {
+    //   return await ctx.reply(menuText, keyboard);
+    // } catch (error) {
+    //   logger.error("Ошибка при отображении меню:", error);
+    //   return ctx.reply("Произошла ошибка при отображении меню. Пожалуйста, попробуйте еще раз.");
+    // }
   }
 }
