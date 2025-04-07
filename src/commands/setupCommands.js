@@ -2,6 +2,7 @@ import { MessageService } from "../services/messageService.js";
 import { SettingsService } from "../services/settingsService.js";
 import { CardService } from "../services/cardService.js";
 import logger from "../utils/logger.js";
+import { COMMANDS, COMMAND_DESCRIPTIONS } from "../utils/constants.js";
 
 /**
  * Registers all bot commands and action handlers
@@ -84,7 +85,13 @@ export const setupCommands = bot => {
     }
 
     // Register default command menu for users
-    bot.telegram.setMyCommands([{ command: "start", description: "Start the bot" }]);
+    // bot.telegram.setMyCommands([
+    //   { command: COMMANDS.START, description: COMMAND_DESCRIPTIONS.START },
+    //   { command: COMMANDS.HELP, description: COMMAND_DESCRIPTIONS.HELP },
+    //   { command: COMMANDS.SETTINGS, description: COMMAND_DESCRIPTIONS.SETTINGS },
+    //   { command: COMMANDS.GET_HOROSCOPE, description: COMMAND_DESCRIPTIONS.ASTROLOGY },
+    //   { command: COMMANDS.TAROT, description: COMMAND_DESCRIPTIONS.TAROT },
+    // ]);
 
     logger.info("Bot commands and handlers setup complete");
   } catch (error) {
