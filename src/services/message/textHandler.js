@@ -1,6 +1,6 @@
 import logger from "../../utils/logger.js";
 import { userFormState } from "./formState.js";
-import { MenuHandler } from "./menuHandler.js";
+// import { MenuHandler } from "./menuHandler.js";
 
 export class TextHandler {
   static async handleText(ctx) {
@@ -18,13 +18,9 @@ export class TextHandler {
     const tarotCommandFn = "ServiceHandler.handleTarotCommand";
 
     // Early returns for specialized handlers
-    if (await settingsHandlerFn(ctx)) {
-      return;
-    }
-
     const formData = userFormState.get(userId);
     if (formData) {
-      return personalDataHandlerFn(ctx);
+      return personalDataHandlerFn;
     }
 
     // Text command matching with early returns
@@ -34,19 +30,19 @@ export class TextHandler {
     }
 
     if (textLower.includes("гороскоп")) {
-      return astrologyHandlerFn(ctx);
+      return astrologyHandlerFn;
     }
 
     if (textLower.includes("настройк")) {
-      return settingsCommandFn(ctx);
+      return settingsCommandFn;
     }
 
     if (textLower.includes("помощь") || textLower.includes("помоги")) {
-      return helpHandlerFn(ctx);
+      return helpHandlerFn;
     }
 
     if (textLower.includes("таро") || textLower.includes("карт")) {
-      return tarotCommandFn(ctx);
+      return tarotCommandFn;
     }
 
     // Default fallback - show menu with a note

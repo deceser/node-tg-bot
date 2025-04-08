@@ -10,6 +10,7 @@ import { BOT_CONFIG, SERVER_CONFIG } from "./utils/constants.js";
 
 import { setupRoutes } from "./server/routes.js";
 import { setupMiddleware } from "./server/middleware.js";
+import { MessageService } from "./services/messageService.js";
 
 // Create a set for tracking recent user requests
 const recentRequests = new Map();
@@ -71,13 +72,30 @@ bot.use(async (ctx, next) => {
   }
 });
 
-// Setup bot commands
-try {
-  setupCommands(bot);
-  logger.info("Commands setup successfully");
-} catch (error) {
-  logger.error("Failed to setup commands:", error);
-}
+// Обработчик данных из веб-приложения
+// bot.on("web_app_data", async ctx => {
+//   try {
+//     const data = ctx.webAppData.data;
+//     logger.info("Получены данные из веб-приложения:", { data });
+
+//     // Обрабатываем команды из веб-приложения
+//     switch (data) {
+//       case "get_astrology":
+//         return MessageService.handleGetHoroscope(ctx);
+//       case "tarot":
+//         return MessageService.handleTarotCommand(ctx);
+//       case "settings":
+//         return MessageService.handleCommandButton({ ...ctx, match: [null, "settings"] });
+//       case "help":
+//         return MessageService.handleCommandButton({ ...ctx, match: [null, "help"] });
+//       default:
+//         return ctx.reply("Неизвестная команда");
+//     }
+//   } catch (error) {
+//     logger.error("Ошибка при обработке данных из веб-приложения:", error);
+//     return ctx.reply("Произошла ошибка при обработке команды");
+//   }
+// });
 
 // Setup Express routes
 setupRoutes(app, bot);
